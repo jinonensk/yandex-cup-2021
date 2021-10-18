@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="root">
+    <div class="el">12</div>
+    <div class="el">2</div>
+    <div class="el">333</div>
+    <div class="el">12</div>
+    <div class="el">2</div>
+    <div class="el">333</div>
+    <!-- <div class="el">55555</div>
+    <div class="el">1</div> -->
+    <!-- <div class="el">У каждого объявления есть свои стили</div>
+    <div class="el">Ширину элемента root, при необходимости вы можете определить, но в тестах она может быть разная
+      <div class="el">Их не нужно менять</div>
+      <div class="el">Каждое объявление должно быть свободным по высоте</div>
+      <div class="el">А вот ширину нужно будет выставить</div>
+      <div class="el">А вот ширину нужно будет выставить</div>
+      <div class="el">Каждое объявление должно быть свободным по высоте</div>
+      <div class="el">А вот ширину нужно будет выставить</div>
+      <div class="el">Каждое объявление должно быть свободным по высоте</div>
+      <div class="el">Ширину элемента root, при необходимости вы можете определить, но в тестах она может быть разная
+      </div> -->
+  </div>
+  <script>
+    const root = document.querySelector('.root');
+    const count = 3;
+    const gap = 20;
+
+    (function renderWaterfall(rootNode, columnCount, elementGap) {
+      const fragment = document.createDocumentFragment();
+      const elements = rootNode.querySelectorAll('.el')
+      const columnSizes = new Array(columnCount).fill(0)
+      const columnMap = {}
+      columnSizes.forEach((_, i) => {
+        const node = document.createElement('div');
+        node.className = `col-${i}`
+        node.style.marginRight = columnCount > i + 1 ? `${elementGap}px` : '0px'
+        columnMap[i] = node
+        fragment.appendChild(node)
+      })
+      elements.forEach(el => {
+        let minIndex = 0
+        columnSizes.forEach((c, i) => {
+          if (+columnSizes[minIndex] > +c) {
+            minIndex = i
+          }
+        })
+        const node = fragment.querySelector(`.col-${minIndex}`)
+        // el.style.marginBottom = `${elementGap}px`
+        columnSizes[minIndex] += el.textContent.length
+        node.appendChild(el)
+      })
+      rootNode.replaceChildren(fragment)
+      console.log('columnSizes', columnSizes)
+    })(root, count, gap)
+
+  </script>
+</body>
+
+</html>

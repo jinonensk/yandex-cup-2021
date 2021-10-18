@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Бирки/бутылки</title>
+  <meta charset='utf-8'>
+  <style>
+    .Page {
+      font-family: Arial;
+      font-size: 12px;
+      margin: 0;
+      padding: 0;
+      color: #2f2d33;
+    }
+
+    .Logo {
+      font-size: 24px;
+      padding: 12px;
+      margin: 0;
+    }
+
+    .Main {
+      display: flex;
+    }
+
+    .Labels {
+      width: 25%;
+      background-color: #f1f2f5;
+      padding: 6px;
+    }
+
+    .Labels_dropzone {
+      background-color: #d8dae0;
+    }
+
+    .Labels_dragovered {
+      background-color: #c0c1cc;
+    }
+
+    .Labels_dragovered * {
+      pointer-events: none;
+    }
+
+    .Label {
+      background-color: #fffcab;
+      margin: 6px;
+      padding: 6px;
+      display: inline-block;
+      cursor: grab;
+    }
+
+    .Label_dragged {
+      background-color: #ffcc00;
+    }
+
+    .Label_removed {
+      display: none;
+    }
+
+    .Bottles {
+      width: 100%;
+      background-color: #d6f1ff;
+    }
+
+    .Bottles_dropzone {
+      background-color: #7ac1ff;
+    }
+
+    .Bottle {
+      display: flex;
+    }
+
+    .Bottle_dragovered {
+      background-color: #0077ff;
+    }
+
+    .Bottle_dragovered * {
+      pointer-events: none;
+    }
+
+    .Bottle__Title {
+      margin: 12px;
+    }
+
+    .TestCase_Bad {
+      background: red;
+    }
+  </style>
+</head>
+
+<body class="Page">
+  <script>
+    let data = window.data || {
+      labels: {
+        '1': 'бирка 1',
+        '2': 'бирка 2',
+        '3': 'бирка 3',
+        '4': 'бирка 4'
+      },
+      letters: [
+        {
+          id: '1',
+          title: 'Бутылка 1',
+          labels: ['1']
+        },
+        {
+          id: '2',
+          title: 'Бутылка 2',
+          labels: ['2', '3']
+        },
+        {
+          id: '3',
+          title: 'Бутылка 3',
+          labels: []
+        },
+        {
+          id: '4',
+          title: 'Бутылка 4',
+          labels: ['1', '3', '4']
+        },
+      ]
+    }
+
+    function mapAndJoin(a, f, s = '') { return a.map(f).join(s) }
+    function buildHtml(data) {
+      return `
+      <div class="Main">
+        <div class="Labels">
+          ${mapAndJoin(
+        Object.entries(data.labels),
+        ([id, title]) => buildLabelHtml(id, title))}
+        </div>
+        <div class="Bottles">
+          ${mapAndJoin(
+          data.letters,
+          ({ id, title, labels }) => `
+              <div class="Bottle" data-letter-id="${id}">
+                <div class="Bottle__Title">${title}</div>
+                ${mapAndJoin(labels, (l) => buildLabelHtml(l, data.labels[l]))}
+              </div>
+            `)}
+        </div>
+      </div>
+    `
+    }
+    function buildLabelHtml(id, title) {
+      return `<div class="Label" draggable="true" data-label-id="${id}">${title}</div>`
+    }
+
+    function main() {
+      const bottleZone = document.querySelector('.Bottles');
+
+      const labelsZone = document.querySelector('.Labels');
+      labelsZone.addEventListener('dragenter', handleLabelsDragEnter);
+      labelsZone.addEventListener('dragover', handleLabelsDragOver);
+      labelsZone.addEventListener('dragleave', handleLabelsDragLeave);
+      labelsZone.addEventListener('drop', handleLabelsDrop);
+
+      const lbs = document.querySelectorAll('[draggable="true"]');
+      [...lbs].forEach(l => {
+        l.addEventListener('dragstart', handleLabelDragStart);
+        l.addEventListener('dragend', handleLabelDragEnd);
+      });
+
+      const bottles = bottleZone.querySelectorAll('.Bottle');
+      [...bottles].forEach(b => {
+        b.addEventListener('dragenter', handleBottleDragEnter);
+        b.addEventListener('dragleave', handleBottleDragLeave);
+        b.addEventListener('dragover', handleBottleDragOver);
+        b.addEventListener('drop', handleBottleDrop);
+      });
+
+      let draggingLabel = null;
+
+      function checkIsFromBottleDropzone(el) {
+        return el.parentElement.classList.contains('Bottle');
+      }
+      function checkIsLableExist(bottleEl) {
+        return [...bottleEl.children].some(c => c.dataset.labelId === draggingLabel.dataset.labelId);
+      }
+
+      function handleLabelDragStart() {
+        draggingLabel = this;
+        this.classList.add('Label_dragged');
+        if (checkIsFromBottleDropzone(draggingLabel)) {
+          labelsZone.classList.add('Labels_dropzone');
+        }
+        bottleZone.classList.add('Bottles_dropzone');
+      }
+      function handleLabelDragEnd() {
+        this.classList.remove('Label_dragged');
+        labelsZone.classList.remove('Labels_dropzone');
+        bottleZone.classList.remove('Bottles_dropzone');
+        draggingLabel = null;
+      }
+
+      function handleBottleDragOver(evt) {
+        evt.preventDefault();
+      }
+      function handleBottleDragEnter() {
+        if (checkIsLableExist(this)) return;
+        this.classList.add('Bottle_dragovered');
+
+      }
+      function handleBottleDragLeave(evt) {
+        evt.preventDefault();
+        this.classList.remove('Bottle_dragovered');
+      }
+      function handleBottleDrop() {
+        this.classList.remove('Bottle_dragovered');
+        if (checkIsLableExist(this)) return;
+
+        if (checkIsFromBottleDropzone(draggingLabel)) {
+          this.appendChild(draggingLabel);
+        } else {
+          const cloneLabel = draggingLabel.cloneNode(true);
+          cloneLabel.addEventListener('dragstart', handleLabelDragStart);
+          cloneLabel.addEventListener('dragend', handleLabelDragEnd);
+          cloneLabel.classList.remove('Label_dragged');
+          this.appendChild(cloneLabel);
+        }
+      }
+
+      function handleLabelsDragOver(evt) {
+        evt.preventDefault();
+      }
+      function handleLabelsDragEnter(evt) {
+        if (!checkIsFromBottleDropzone(draggingLabel)) return;
+        this.classList.add('Labels_dragovered');
+      }
+      function handleLabelsDragLeave(evt) {
+        evt.preventDefault();
+        this.classList.remove('Labels_dragovered');
+      }
+      function handleLabelsDrop() {
+        this.classList.remove('Labels_dragovered');
+        if (!checkIsFromBottleDropzone(draggingLabel)) return;
+        draggingLabel.parentElement.removeChild(draggingLabel);
+      }
+    }
+
+    document.body.innerHTML = buildHtml(data);
+    main();
+    window.onSolutionReady && window.onSolutionReady();
+  </script>
+</body>
+
+</html>
